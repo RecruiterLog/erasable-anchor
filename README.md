@@ -56,6 +56,29 @@ const memo = formatMemo({ prefix: "rl", version: 1, period: "2026-09-08", root }
 // => "rl:v1:2026-09-08:8f2c..."
 ```
 
+Publishing it, from `erasable-anchor/solana`:
+
+```js
+import { submitRoot } from "erasable-anchor/solana";
+
+const { signature } = await submitRoot(
+  { prefix: "rl", version: 1, period: "2026-09-08", root },
+  { rpcUrl: "https://api.mainnet-beta.solana.com", secretKey: process.env.ANCHOR_KEY }
+);
+```
+
+That waits for confirmation rather than returning on submission, because an
+unconfirmed signature can still be dropped and recording the batch as anchored
+on the strength of one would leave you asserting a proof no chain carries.
+
+A complete anchor transaction costs about 7,030 lamports. No account is
+created, so there is no rent, and the cost does not grow with the number of
+records in a batch.
+
+If you already have a Solana client you would rather use, `memoInstruction()`
+and `setComputeUnitPriceInstruction()` from the same module build the
+instructions and require nothing at all.
+
 Serving a proof for one record:
 
 ```js
@@ -131,8 +154,14 @@ extracted from that codebase and reproduces its hashes byte for byte, verified
 against both the implementation that produced the live anchors and an
 independent reimplementation.
 
-Zero runtime dependencies. Node 18 or later, for `node:crypto`; CI runs the
-suite on 20, 22 and 24. Browser
+Zero runtime dependencies in the main entry point, which is worth protecting:
+a verifier should be able to depend on the hashing rules without pulling in a
+chain client. `erasable-anchor/solana` needs `@solana/kit` for `submitRoot`
+only, as an optional peer dependency imported lazily, so the instruction
+builders in that module work without it too.
+
+Node 18 or later, for `node:crypto`; CI runs the suite on 20, 22 and 24.
+Browser
 verification lives in
 [erasable-anchor-verify](https://github.com/RecruiterLog/erasable-anchor-verify),
 which uses Web Crypto and is deliberately a separate implementation: a
@@ -141,4 +170,13 @@ own code.
 
 ## Licence
 
-Apache 2.0. See `LICENSE` and `NOTICE`.
+**Code: Apache 2.0** (`LICENSE`). Chosen over MIT for the express patent grant,
+because the intended adopters of this pattern are regulated businesses whose
+legal teams treat a missing patent grant as a reason to decline.
+
+**The specification, `SPEC.md`: CC BY 4.0** (`LICENSE-SPEC`). A software licence
+on a prose document is a category error, and a specification nobody may quote or
+adapt is not much of a specification. Reimplement it in any language, for any
+purpose including commercially, with attribution and without asking us.
+
+See also `NOTICE`.

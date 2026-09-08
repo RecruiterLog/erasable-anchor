@@ -4,7 +4,12 @@ Copyright 2026 Bitrora (Pty) Ltd, trading as RecruiterLog
 This product includes software developed at RecruiterLog
 (https://recruiterlog.com).
 
-Licensed under the Apache License, Version 2.0. See LICENSE.
+The code is licensed under the Apache License, Version 2.0. See LICENSE.
+
+The specification, SPEC.md, is licensed separately under the Creative Commons
+Attribution 4.0 International licence. See LICENSE-SPEC. It is a prose
+document rather than software, and is meant to be quoted, adapted and
+reimplemented freely with attribution.
 
 The tree construction follows the domain separation convention described in
 RFC 6962 (Certificate Transparency), which prefixes leaf and internal node

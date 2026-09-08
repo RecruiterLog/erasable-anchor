@@ -30,14 +30,27 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./solana": {
+      "types": "./dist/solana.d.ts",
+      "default": "./dist/solana.js"
     }
   },
   "files": [
     "dist",
     "SPEC.md",
     "LICENSE",
+    "LICENSE-SPEC",
     "NOTICE"
   ],
+  "peerDependencies": {
+    "@solana/kit": ">=2"
+  },
+  "peerDependenciesMeta": {
+    "@solana/kit": {
+      "optional": true
+    }
+  },
   "engines": {
     "node": ">=18"
   },
@@ -47,6 +60,7 @@
     "prepublishOnly": "npm test"
   },
   "devDependencies": {
+    "@solana/kit": "^5.5.1",
     "@types/node": "^20.14.0",
     "typescript": "^5.6.0"
   }

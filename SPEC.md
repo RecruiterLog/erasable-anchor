@@ -1,5 +1,15 @@
 # erasable-anchor wire format, version 1
 
+> **Licence.** This specification is published under
+> [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/)
+> (CC BY 4.0), the full text of which is in `LICENSE-SPEC`. The code in this
+> repository is Apache-2.0 (`LICENSE`). The two are deliberately different: a
+> software licence on a prose document is a category error, and a specification
+> nobody may quote or adapt is not much of a specification.
+>
+> You may reimplement this format, in any language, for any purpose, including
+> commercially, with attribution and without asking us.
+
 This document defines the format precisely enough to reimplement in another
 language. Every value below is taken from a passing test, not written by hand.
 Check any reimplementation against `test/vectors.json`.
@@ -180,7 +190,9 @@ enforce: **the salt must not exist anywhere else.** Backups, replicas, audit
 logs, analytics snapshots and warehouse exports all defeat it. Anyone adopting
 this should be able to say where salts live and what deletes them.
 
-## 7. On chain payload
+## 7. Publishing the root
+
+### 7.1 The payload
 
 ```
 <prefix>:v<version>:<period>:<root>
@@ -204,8 +216,68 @@ A parser should reject a memo whose prefix is not the one expected. A memo
 published by an unrelated system that happens to share this format will
 otherwise parse successfully.
 
-On Solana this goes in an SPL Memo instruction. Nothing about the format is
-Solana specific.
+Nothing about the payload is Solana specific. It is a short ASCII string, and
+any ledger that can carry one will do.
+
+### 7.2 Submission on Solana
+
+The root goes in an **SPL Memo v2** instruction:
+
+```
+program   MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr
+accounts  none
+data      the payload from 7.1, as UTF-8 bytes, with no length prefix,
+          no discriminator and no padding
+```
+
+The empty account list is not an omission. The memo program signs nothing and
+touches no state, so the instruction reads and writes no accounts at all.
+
+**Why a memo rather than a program.** A root is inert data: nothing needs to
+execute against it and nothing needs to read it back on chain. A memo is
+legible on any explorer with no IDL, which is exactly the property you want in
+something published so outsiders can check it. A custom program would be more
+to audit, more to maintain, and would make the anchor harder for a third party
+to inspect, which is the opposite of the point.
+
+**The transaction.** One signature, from the publishing wallet as fee payer.
+A priority fee is optional and worth including for a scheduled write, using
+the compute budget program:
+
+```
+program   ComputeBudget111111111111111111111111111111
+accounts  none
+data      u8 discriminator 3 (SetComputeUnitPrice), then microLamports as
+          u64 little endian
+```
+
+10,000 microLamports per compute unit is a reasonable default. A complete
+anchor transaction costs about **7,030 lamports**, or 0.000007 SOL, which is
+the base signature fee plus that priority. No account is created, so there is
+no rent: the cost does not grow with the number of records in the batch, only
+with the number of batches.
+
+A worked example, from a real transaction:
+
+```
+memo instruction data (UTF-8)
+  rl:v1:2026-09-07:ee0885119c798d763c2930ba6df749aecbb19d25cb69c3c9e9ddbf2afd48ed4f
+
+compute budget instruction data (hex)
+  03 1027000000000000        discriminator 3, 10000 little endian
+```
+
+**Wait for confirmation, do not merely submit.** An unconfirmed signature can
+still be dropped. Recording a batch as anchored on the strength of one leaves
+your database asserting a proof that no chain carries, which is worse than not
+anchoring at all: it fails closed for everyone except the person checking.
+
+### 7.3 Reading it back
+
+A verifier fetches the transaction, finds the memo among the log messages, and
+parses it per 7.1. The root it compares against must come from the chain, not
+from whoever served the proof. A proof checked against a root supplied by its
+own author establishes only internal consistency.
 
 ## 8. What a proof establishes
 
