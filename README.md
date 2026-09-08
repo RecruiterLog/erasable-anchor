@@ -132,6 +132,22 @@ Three consequences worth being explicit about:
    and analytics snapshots all defeat the property. This is an operational
    commitment, and the library cannot enforce it for you.
 
+## Reviewing this
+
+`THREAT-MODEL.md` states, in falsifiable form, exactly what this construction
+claims (seven numbered claims) and what it does not (six numbered non-claims),
+along with the attacks already considered and the three places we would most
+like a reviewer to push.
+
+It is written to be attacked rather than admired. If you find a claim that does
+not hold, that is the most useful thing you can send us, and an adverse finding
+will be published.
+
+The shortest version of the weakest link: every erasure claim collapses if a
+salt survives in a backup, a replica or an analytics export. That is
+operational, the code cannot enforce it, and we think it is a likelier failure
+than anything cryptographic.
+
 ## Interoperability
 
 `SPEC.md` defines the wire format at byte level so the scheme can be
