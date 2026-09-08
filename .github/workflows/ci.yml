@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["20", "22", "24"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - run: npm ci
+      - run: npm test
+
+      # The vectors must be reproducible from the code that ships beside them.
+      # If this step shows a diff, either the hashing rules moved or the file
+      # was hand edited, and both are worth failing the build over: the roots
+      # are already published and cannot be reissued.
+      - name: test/vectors.json is reproducible
+        run: |
+          node scripts/make-vectors.mjs --write
+          git diff --exit-code -- test/vectors.json
